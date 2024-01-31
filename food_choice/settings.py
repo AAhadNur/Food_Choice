@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'base',
 ]
 
-AUTH_USER_MODEL = 'base.CustomUser'
+# AUTH_USER_MODEL = 'base.CustomUser'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -50,11 +50,12 @@ MIDDLEWARE = [
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        # 'rest_framework.authentication.BasicAuthentication',
-        # 'rest_framework.authentication.SessionAuthentication',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
         'knox.auth.TokenAuthentication',
-    ]
+    ),
+    'KNOX': {
+        'TOKEN_TTL': 60 * 24,
+    },
 }
 
 ROOT_URLCONF = 'food_choice.urls'
@@ -103,6 +104,10 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
     },
+]
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 

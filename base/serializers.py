@@ -1,34 +1,63 @@
 from rest_framework import serializers
-from .models import CustomUser, Restaurant, Menu, Vote, Feedback, DailyResults
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+from .models import Profile, Restaurant, Menu, Vote, Feedback, DailyResults
 
 
 class UserSerializer(serializers.ModelSerializer):
     """ Serializer for the CustomUser model used for user retrieval """
 
     class Meta:
-        model = CustomUser
-        fields = ('id', 'username', 'user_type', 'email')
+        model = User
+        fields = ('id', 'username', 'email')
 
 
 class RegisterSerializer(serializers.ModelSerializer):
     """ Serializer for user registration """
 
     class Meta:
-        model = CustomUser
-        fields = ('id', 'username', 'email', 'password', 'user_type',
-                  'phone_number', 'birthdate', 'address')
+        model = User
+        fields = ('username', 'email', 'password')
         # Marked as write-only to ensure it's not included in response data
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
         """ Custom method for creating a new user """
 
-        user = CustomUser.objects.create_user(
-            validated_data['username'],
-            validated_data['email'],
-            validated_data['password']
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password']
         )
         return user
+
+
+class AuthTokenSerializer(serializers.Serializer):
+    """ Serializer for obtaining an authentication token """
+
+    class Meta:
+        model = User
+        fields = ('username', 'password')
+
+    def validate(self, data):
+        """ Validate the user credentials """
+        username = data.get('username')
+        password = data.get('password')
+
+        if username and password:
+            user = authenticate(request=self.context.get(
+                'request'), username=username, password=password)
+
+            if not user:
+                msg = 'Unable to log in with provided credentials.'
+                raise serializers.ValidationError(msg, code='authorization')
+
+            data['user'] = user
+        else:
+            msg = 'Must include "email" and "password".'
+            raise serializers.ValidationError(msg, code='authorization')
+
+        return data
 
 
 class RestaurantSerializer(serializers.ModelSerializer):
