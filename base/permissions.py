@@ -15,3 +15,12 @@ class IsAdminOrOwner(permissions.BasePermission):
 
         # Write permissions are only allowed to admin users who are also the owner of the object.
         return request.user.user_type == 'administrator' and obj.managing_admin == request.user
+
+
+class IsEmployee(permissions.BasePermission):
+    """
+    Custom permission to allow only employee-type users to perform an action.
+    """
+
+    def has_permission(self, request, view):
+        return request.user.user_type == 'employee'
