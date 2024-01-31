@@ -1,12 +1,12 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.contrib.auth.models import User
 
 # Create your models here.
 
 
-class CustomUser(AbstractUser):
+class Profile(models.Model):
     """
-    Custom user model for representing users with additional fields.
+    Profile model for representing users with additional fields.
     """
 
     # Types of users in this project
@@ -18,13 +18,16 @@ class CustomUser(AbstractUser):
         (ADMINISTRATOR, 'Administrator'),
     )
 
+    user = models.OneToOneField(
+        User,
+        related_name="profile",
+        on_delete=models.CASCADE
+    )
     # Name or username of the user
-    username = models.CharField(max_length=200)
+    fullname = models.CharField(max_length=200)
     # Employee or administrator
     user_type = models.CharField(
         max_length=20, choices=USER_TYPE_CHOICE, default=EMPLOYEE)
-    # User's email address
-    email = models.EmailField(unique=True)
     # Contact phone number
     phone_number = models.CharField(
         max_length=24, unique=True, null=True, blank=True)
@@ -34,34 +37,14 @@ class CustomUser(AbstractUser):
     address = models.CharField(max_length=255, null=True, blank=True)
     # User's profile picture
     profile_image = models.ImageField(null=True, default="avatar.svg")
-    # Flag indicating account status
-    is_active = models.BooleanField(default=False)
-    # Many-to-Many relationship with Group model representing user groups.
-    groups = models.ManyToManyField(
-        Group,
-        # Reverse relation name for accessing CustomUser instances from Group instances.
-        related_name='customuser_set',
-        blank=True,
-        verbose_name='groups'
-    )
-    # Many-to-Many relationship with Permission model representing user-specific permissions.
-    user_permissions = models.ManyToManyField(
-        Permission,
-        # Reverse relation name for accessing CustomUser instances from Permission instances.
-        related_name='customuser_set',
-        blank=True,
-        verbose_name='user permissions'
-    )
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
 
     class Meta:
         """ Class Meta for ordering user objects """
 
-        ordering = ['username']
+        ordering = ['fullname']
 
     def __str__(self):
-        return str(self.username)
+        return str(self.fullname)
 
 
 class Restaurant(models.Model):
@@ -71,7 +54,7 @@ class Restaurant(models.Model):
     restaurant_name = models.CharField(max_length=255, unique=True)
     # ID of the managing administrator
     managing_admin = models.ForeignKey(
-        CustomUser,
+        User,
         related_name='restaurant',
         null=True,
         on_delete=models.SET_NULL,
@@ -140,7 +123,7 @@ class Vote(models.Model):
 
     # ID of the user casting the vote
     voter = models.ForeignKey(
-        CustomUser,
+        User,
         related_name='votes',
         on_delete=models.CASCADE
     )
@@ -151,7 +134,7 @@ class Vote(models.Model):
         on_delete=models.CASCADE
     )
     # Timestamp indicating when the vote was cast
-    vote_timestamp = models.DateTimeField(auto_now_add=True)
+    vote_timestamp = models.DateField(auto_now_add=True)
 
     class Meta:
         """ Ordering based on timestamp """
@@ -166,7 +149,7 @@ class Feedback(models.Model):
 
     # ID of the user providing feedback
     employee = models.ForeignKey(
-        CustomUser,
+        User,
         related_name='feedbacks',
         on_delete=models.CASCADE
     )

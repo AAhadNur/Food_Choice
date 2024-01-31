@@ -1,4 +1,4 @@
-
+from django.contrib.auth import authenticate
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from knox.models import AuthToken
@@ -12,14 +12,13 @@ from .serializers import (
     RegisterSerializer, UserSerializer, RestaurantSerializer,
     MenuSerializer, VoteSerializer, FeedbackSerializer, DailyResultsSerializer
 )
-from . models import Restaurant, Menu, Feedback, DailyResults, Vote
-from .permissions import IsAdminOrOwner, IsEmployee
+from . models import Restaurant, Menu, Feedback, DailyResults, Vote, Profile
+from .permissions import IsAdminOrOwner, IsEmployee, IsAdministrator
 
 # Create your views here.
 
+
 # Register API
-
-
 class RegisterAPI(generics.GenericAPIView):
     """ API View for user registration """
     serializer_class = RegisterSerializer
@@ -34,29 +33,48 @@ class RegisterAPI(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+
+        Profile.objects.create(
+            user=user,
+            fullname=user.username
+        )
+
+        # Automatically login
+        login(request, user)
+
         return Response({
             "user": UserSerializer(user, context=self.get_serializer_context()).data,
             "token": AuthToken.objects.create(user)[1]
         })
 
 
-# Login API
 class LoginAPI(KnoxLoginView):
-    """ API View for user login """
+    """ API View for user login using Knox """
     permission_classes = (permissions.AllowAny,)
+    serializer_class = AuthTokenSerializer
 
     def post(self, request, format=None):
         """ Handle POST requests for user login """
 
         # Check if the user is already authenticated
         if request.user.is_authenticated:
-            return Response({'error': 'You are already logged in. Logout to register a new account.'}, status=400)
+            return Response({'error': 'You are already logged in. Logout to login with a different account.'}, status=400)
 
         serializer = AuthTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
+
+        # Log in the user
         login(request, user)
-        return super(LoginAPI, self).post(request, format=None)
+
+        # Generate a new token for the user using Knox
+        _, token = AuthToken.objects.create(user)
+
+        return Response({
+            "user": UserSerializer(user).data,
+            "token": token,  # Include the Knox authentication token in the response
+            "details": "Logged in successfully",
+        })
 
 
 class LogoutAPI(generics.GenericAPIView):
@@ -69,7 +87,7 @@ class LogoutAPI(generics.GenericAPIView):
         """
         Handle POST requests for user logout.
         """
-        request.auth.delete()
+        AuthToken.objects.filter(user=request.user).delete()
         return Response({'detail': 'Successfully logged out'})
 
 
@@ -77,11 +95,11 @@ class RestaurantListCreateAPIView(generics.ListCreateAPIView):
     """ API view for listing all restaurants and creating new ones """
     queryset = Restaurant.objects.all()
     serializer_class = RestaurantSerializer
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated, IsAdministrator]
 
     def perform_create(self, serializer):
         """ Perform creation of a new restaurant """
-        serializer.save(managing_admin=self.request.user)
+        serializer.save()
 
 
 class RestaurantDetailUpdateDeleteAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -97,7 +115,7 @@ class MenuListCreateAPIView(generics.ListCreateAPIView):
     """
     queryset = Menu.objects.all()
     serializer_class = MenuSerializer
-    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated, IsAdministrator]
 
 
 class MenuDetailUpdateDeleteAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -122,7 +140,7 @@ class CurrentDayMenuAPIView(generics.ListAPIView):
         Get the menu items for the current day.
         """
         current_day_menu = Menu.objects.filter(
-            date__date=self.request.data.today()
+            date=timezone.now().date()
         )
         return current_day_menu
 
@@ -196,56 +214,76 @@ class DailyResultsCreateAPIView(generics.ListCreateAPIView):
 
         # Checks if winner restaurant of current date already selected
         current_date_results = DailyResults.objects.filter(
-            result_date__date=self.request.data.today()).first()
+            result_date=timezone.now().date()
+        )
 
         # If no winner selected yet
-        if current_date_results is not None:
+        if current_date_results is None:
             today = timezone.now().date()
+            print(today)
 
             # Vote count of menus based on current date
             menu_votes_count = Vote.objects.filter(
-                vote_timestamp__date=today
+                vote_timestamp=today
             ).values('menu').annotate(vote_count=Count('id'))
+            print(menu_votes_count)
 
             menu_with_max_votes = menu_votes_count.order_by(
                 '-vote_count').all()
+            print(menu_with_max_votes)
+
+            winning_menu = None
+            winning_restaurant = None
 
             # Resolves the winning strike of 3 consecutive working days
             for menu in menu_with_max_votes:
                 menu_id = menu['menu']
                 winning_menu = Menu.objects.get(id=menu_id)
                 winning_restaurant = winning_menu.restaurant
+                max_votes = menu['vote_count']
 
                 if winning_restaurant.winning_strike > 2:
                     winning_restaurant.winning_strike = 0
                     winning_restaurant.save()
                 else:
                     winning_restaurant.winning_strike += 1
-                    max_votes = menu['vote_count']
                     winning_restaurant.save()
                     break
 
             # Winning restaurant and it's menu gets added in the Dailyresult table
-            DailyResults.objects.create(
-                winning_menu=winning_menu,
-                winning_restaurant=winning_restaurant,
-                votecount=max_votes
-            )
+            if winning_menu is not None and winning_restaurant is not None:
+                DailyResults.objects.create(
+                    winning_menu=winning_menu,
+                    winning_restaurant=winning_restaurant,
+                    votecount=max_votes
+                )
+
+            return Response({
+                'winning menu': winning_menu,
+                'winning restaurent': winning_restaurant,
+                'details': 'helllow'
+            })
 
 
 class DailyResultsCurrentDateAPIView(generics.RetrieveAPIView):
     """
-    API view for retrieving the DailyResults of the current date.
+    API view for retrieving the DailyResults of the current date based on votecount.
     """
 
-    queryset = DailyResults.objects.all()
     serializer_class = DailyResultsSerializer
+    lookup_field = 'votecount'
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
         """
-        Get the DailyResults object for the current date.
+        Get the DailyResults instance for the current date based on votecount.
         """
         current_date_results = DailyResults.objects.filter(
-            result_date__date=self.request.data.today()).first()
-        return current_date_results
+            result_date=timezone.now().date()
+        ).order_by('-votecount').first()
+
+        if current_date_results is not None:
+            return current_date_results
+        else:
+            # If no results found
+            return Response({'detail': 'No DailyResults found for the current date.'}, status=404)

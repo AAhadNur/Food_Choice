@@ -23,4 +23,13 @@ class IsEmployee(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
-        return request.user.user_type == 'employee'
+        return request.user.profile.user_type == 'employee'
+
+
+class IsAdministrator(permissions.BasePermission):
+    """
+    Custom permission to allow only administrator-type users to perform an action
+    """
+
+    def has_permission(self, request, view):
+        return request.user.profile.user_type == 'administrator'
