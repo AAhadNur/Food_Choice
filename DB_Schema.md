@@ -113,7 +113,7 @@ This Markdown file serves as documentation for the logical database schema of th
 
 Logical schema diagram of the project database:
 
-![Schema Diagram](https://github.com/AAhadNur/Timely/blob/main/static/diagrams/schema.png)
+![Schema Diagram](https://github.com/AAhadNur/Food_Choice/blob/main/static/diagrams/schema.png)
 
 [Diagram in Cloud](https://lucid.app/lucidchart/11fb9c5e-156f-4f18-b786-f7221886cf38/edit?viewport_loc=-56%2C-648%2C2080%2C1032%2C0_0&invitationId=inv_cceb442d-7fdb-4b2f-aff4-4aa24ca7777b)
 
@@ -123,4 +123,4 @@ Logical schema diagram of the project database:
 
 ER Diagram of the project database:
 
-![ER Diagram](https://github.com/AAhadNur/Timely/blob/main/static/diagrams/er.png)
+![ER Diagram](https://github.com/AAhadNur/Food_Choice/blob/main/static/diagrams/er.png)

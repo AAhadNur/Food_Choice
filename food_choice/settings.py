@@ -29,8 +29,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # Third party Apps
     'rest_framework',
+
+    # Base App of the project
+    'base',
 ]
+
+AUTH_USER_MODEL = 'base.CustomUser'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
