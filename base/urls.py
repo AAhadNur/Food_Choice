@@ -18,4 +18,17 @@ urlpatterns = [
     path('menus/current-day/', views.CurrentDayMenuAPIView.as_view(),
          name='current-day-menu'),
 
+    path('votes/', views.VoteCreateAPIView.as_view(), name='vote-create'),
+
+    path('feedbacks/', views.FeedbackListAPIView.as_view(), name='feedback-list'),
+    path('feedbacks/create/', views.FeedbackCreateAPIView.as_view(),
+         name='feedback-create'),
+
+    path('daily-results/', views.DailyResultsListAPIView.as_view(),
+         name='daily-results-list'),
+    path('daily-results/create/', views.DailyResultsCreateAPIView.as_view(),
+         name='daily-results-create'),
+    path('daily-results/current-date/', views.DailyResultsCurrentDateAPIView.as_view(),
+         name='daily-results-current-date'),
+
 ]

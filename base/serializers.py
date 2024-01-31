@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CustomUser, Restaurant, Menu
+from .models import CustomUser, Restaurant, Menu, Vote, Feedback, DailyResults
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -43,4 +43,25 @@ class MenuSerializer(serializers.ModelSerializer):
     """ Serializers for Menu object """
     class Meta:
         model = Menu
+        fields = '__all__'
+
+
+class VoteSerializer(serializers.ModelSerializer):
+    """ Serializers for Vote object """
+    class Meta:
+        model = Vote
+        fields = '__all__'
+
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    """ Serializers for Feedback """
+    class Meta:
+        model = Feedback
+        fields = '__all__'
+
+
+class DailyResultsSerializer(serializers.ModelSerializer):
+    """ Serializers for Daily Results """
+    class Meta:
+        model = DailyResults
         fields = '__all__'
