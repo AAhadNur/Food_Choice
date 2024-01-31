@@ -6,7 +6,9 @@ from knox.views import LoginView as KnoxLoginView
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from django.contrib.auth import login
 
-from .serializers import RegisterSerializer, UserSerializer
+from .serializers import RegisterSerializer, UserSerializer, RestaurantSerializer, MenuSerializer
+from . models import Restaurant, Menu
+from .permissions import IsAdminOrOwner
 
 # Create your views here.
 
@@ -64,3 +66,57 @@ class LogoutAPI(generics.GenericAPIView):
         """
         request.auth.delete()
         return Response({'detail': 'Successfully logged out'})
+
+
+class RestaurantListCreateAPIView(generics.ListCreateAPIView):
+    """ API view for listing all restaurants and creating new ones """
+    queryset = Restaurant.objects.all()
+    serializer_class = RestaurantSerializer
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+
+    def perform_create(self, serializer):
+        """ Perform creation of a new restaurant """
+        serializer.save(managing_admin=self.request.user)
+
+
+class RestaurantDetailUpdateDeleteAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """ API view for retrieving, updating, and deleting individual restaurants """
+    queryset = Restaurant.objects.all()
+    serializer_class = RestaurantSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrOwner]
+
+
+class MenuListCreateAPIView(generics.ListCreateAPIView):
+    """
+    API view for listing all menus and creating new ones.
+    """
+    queryset = Menu.objects.all()
+    serializer_class = MenuSerializer
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+
+
+class MenuDetailUpdateDeleteAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    API view for retrieving, updating, and deleting individual menus.
+    """
+    queryset = Menu.objects.all()
+    serializer_class = MenuSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrOwner]
+
+
+class CurrentDayMenuAPIView(generics.ListAPIView):
+    """
+    API view for retrieving the menu for the current day.
+    """
+
+    serializer_class = MenuSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Get the menu items for the current day.
+        """
+        current_day_menu = Menu.objects.filter(
+            date__date=self.request.data.today()
+        )
+        return current_day_menu

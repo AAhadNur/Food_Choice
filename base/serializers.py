@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CustomUser
+from .models import CustomUser, Restaurant, Menu
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -29,3 +29,18 @@ class RegisterSerializer(serializers.ModelSerializer):
             validated_data['password']
         )
         return user
+
+
+class RestaurantSerializer(serializers.ModelSerializer):
+    """ Serializers for Restaurant object """
+
+    class Meta:
+        model = Restaurant
+        fields = '__all__'
+
+
+class MenuSerializer(serializers.ModelSerializer):
+    """ Serializers for Menu object """
+    class Meta:
+        model = Menu
+        fields = '__all__'
