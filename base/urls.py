@@ -19,7 +19,7 @@ urlpatterns = [
     path('menus/current-day/', views.CurrentDayMenuAPIView.as_view(),
          name='current-day-menu'),
 
-    path('votes/', views.VoteCreateAPIView.as_view(), name='vote-create'),
+    path('vote-create/', views.VoteCreateAPIView.as_view(), name='vote-create'),
 
     path('feedbacks/', views.FeedbackListAPIView.as_view(), name='feedback-list'),
     path('feedbacks/create/', views.FeedbackCreateAPIView.as_view(),
