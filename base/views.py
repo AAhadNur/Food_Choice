@@ -220,17 +220,14 @@ class DailyResultsCreateAPIView(generics.ListCreateAPIView):
         # If no winner selected yet
         if current_date_results is None:
             today = timezone.now().date()
-            print(today)
 
             # Vote count of menus based on current date
             menu_votes_count = Vote.objects.filter(
                 vote_timestamp=today
             ).values('menu').annotate(vote_count=Count('id'))
-            print(menu_votes_count)
 
             menu_with_max_votes = menu_votes_count.order_by(
                 '-vote_count').all()
-            print(menu_with_max_votes)
 
             winning_menu = None
             winning_restaurant = None
@@ -261,7 +258,7 @@ class DailyResultsCreateAPIView(generics.ListCreateAPIView):
             return Response({
                 'winning menu': winning_menu,
                 'winning restaurent': winning_restaurant,
-                'details': 'helllow'
+                'details': 'Fair selection applied'
             })
 
 
@@ -271,7 +268,6 @@ class DailyResultsCurrentDateAPIView(generics.RetrieveAPIView):
     """
 
     serializer_class = DailyResultsSerializer
-    lookup_field = 'votecount'
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
@@ -280,7 +276,7 @@ class DailyResultsCurrentDateAPIView(generics.RetrieveAPIView):
         """
         current_date_results = DailyResults.objects.filter(
             result_date=timezone.now().date()
-        ).order_by('-votecount').first()
+        )
 
         if current_date_results is not None:
             return current_date_results
